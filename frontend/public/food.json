@@ -1,0 +1,68 @@
+[
+  {
+    "id": "fd-001",
+    "Food": "Cavatappi Alchemy",
+    "FoodDes": "Cavatappi in a truffle mornay, crowned with golden parmesan and smoked paprika crumble",
+    "FoodIMG": "https://www.kitchentreaty.com/wp-content/uploads/2012/08/best-mac-and-cheese-recipe-19.jpg?fbclid=IwY2xjawN7CY1leHRuA2FlbQIxMQBzcnRjBmFwcF9pZAEwAAEeDXDgsKrDmBbsUJ0QiUWsuG9PssTIRxLH-FgbWoXOLkq_SAqxNKcc97-X0PE_aem_lukYJ54lzFC5YnCidhTCSg"
+  },
+  {
+    "id": "fd-002",
+    "Food": "Fromage Mélange Croûte",
+    "FoodDes": "Triple-aged cheddar, Gruyère, and fontina embraced in artisan sourdough, bronzed to perfection, basil olive oil drizzle",
+    "FoodIMG": "https://www.thechunkychef.com/wp-content/uploads/2016/08/Ultimate-Grilled-Cheese-2.jpg"
+  },
+  {
+    "id": "fd-003",
+    "Food": "Poulet Doré en Croûte",
+    "FoodDes": "Free-range chicken tenders in herbed panko, lemon aioli, microgreens",
+    "FoodIMG": "https://blackstoneproducts.com/cdn/shop/articles/crispy-crunchy-chicken-tenders-169314.jpg?v=1675584194"
+  },
+  {
+    "id": "fd-004",
+    "Food": "Wagyu Crown Burger",
+    "FoodDes": "Wagyu beef medallion, brioche crown, caramelized shallots, black garlic aioli, truffle foam, gilded fries",
+    "FoodIMG": "https://www.seriouseats.com/thmb/P0opRA7Movx8bqIAjXQHo7y6VeU=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/20230525-SEA-Wagyu-Burger-Amanda-Suarez-hero-54009c50b715486892bbed7a0edc829c.jpg"
+  },
+  {
+    "id": "fd-005",
+    "Food": "Sausage Artisan du Chef",
+    "FoodDes": "Heritage pork sausage, house-fermented relish, Dijon mustard pearls, brioche baton, microgreens.",
+    "FoodIMG": "https://frank-furters.com/wp-content/uploads/2024/05/gourmet-hot-dogs.jpg"
+  },
+  {
+    "id": "fd-006",
+    "Food": "Merluzzo alla Crosta d’Oro con Patate",
+    "FoodDes": "Line-caught cod in champagne batter, gilded pommes frites, truffle aioli",
+    "FoodIMG": "https://caponegourmet.com/cdn/shop/files/filet-morue-pate-fish-n-chips-capone-jpg_600x.jpg?v=1742385809"
+  },
+  {
+    "id": "fd-007",
+    "Food": "Golden Fluff Stack",
+    "FoodDes": "Buttermilk pastries layered with saffron cream, candied citrus shards, amber maple reduction",
+    "FoodIMG": "https://images.squarespace-cdn.com/content/v1/624fa63d5ba99559345806e6/7f29f33c-1163-4576-b891-2bbbf88825cf/EG8_EP18_Fluffy-Blueberry-Pancakes_67645e919b12432e590b303456de6e74.jpg"
+  },
+  {
+    "id": "fd-008",
+    "Food": "Pain de Viande des Prairies",
+    "FoodDes": "Free-range beef and veal medley, slow-braised with roasted root vegetable jus",
+    "FoodIMG": "https://assets.bonappetit.com/photos/57acf47353e63daf11a4dbde/master/pass/MEATLOAF-2.jpg"
+  },
+  {
+    "id": "fd-009",
+    "Food": "Aurora Veggie Shepherd’s Pie",
+    "FoodDes": "Layers of root vegetables and lentil ragu, topped with a golden potato purée crust",
+    "FoodIMG": "https://www.thewholesomedish.com/wp-content/uploads/2019/02/The-Best-Classic-Shepherds-Pie-2.jpg"
+  },
+  {
+    "id": "fd-010",
+    "Food": "Twilight Chicken Pot Pie",
+    "FoodDes": "Free-range chicken, wild mushrooms, and seasonal vegetables in a flaky, herb-infused crust",
+    "FoodIMG": "https://img.buzzfeed.com/video-api-prod/assets/4c08834d049843ddba31398a6ecb4803/BFV6892_ChickenPotPieMadeByWolfgangPuck-Thumb.jpg?resize=1200:*"
+  },
+  {
+    "id": "fd-011",
+    "Food": "Gilded Grilled Salmon",
+    "FoodDes": "Pan-seared salmon, champagne beurre blanc, baby zucchini ribbons, violet potato purée",
+    "FoodIMG": "https://lifeloveandgoodfood.com/wp-content/uploads/2015/11/Best-Grilled-Salmon_9331-2.jpg"
+  }
+]
