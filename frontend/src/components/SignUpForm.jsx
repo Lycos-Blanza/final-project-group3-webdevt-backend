@@ -1,42 +1,40 @@
-// src/components/SignUpForm.jsx
 import React, { useState } from 'react';
+import api from '../api/api';
+import { useNotification } from '../contexts/NotificationContext';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function SignUpForm({ onLogInClick }) {
-  const { signup } = useAuth();
-  const [error, setError] = useState('');
+  const { login } = useAuth();
+  const notify = useNotification();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
     const form = e.target;
-    const name = form.name.value;
-    const email = form.email.value;
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
     const password = form.password.value;
     const confirm = form.confirmPassword.value;
 
     if (password !== confirm) {
-      setError('Passwords do not match');
-      setLoading(false);
-      return;
-    }
-    if (!/^\S+@\S+\.\S+$/.test(email)) {
-      setError('Invalid email');
-      setLoading(false);
-      return;
-    }
-    if (password.length < 4) {
-      setError('Password too short');
+      notify('Passwords do not match', 'error');
       setLoading(false);
       return;
     }
 
-    const success = signup(name, email, password);
-    setLoading(false);
-    if (!success) {
-      setError('Email already exists');
+    try {
+      const res = await api.post('/auth/register', { name, email, password });
+      const { token, user } = res.data;
+
+      localStorage.setItem('diner28_token', token);
+      login(user.email, null, user);
+      notify('Account created successfully!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Registration failed';
+      notify(msg, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -58,12 +56,11 @@ export default function SignUpForm({ onLogInClick }) {
         Confirm:
         <input required type="password" name="confirmPassword" className="mt-1.5 p-2 border border-[#5C3A2E] rounded text-[1rem] bg-[#E9D3BE]" />
       </label>
-      {error && <div className="text-red-600 text-sm">{error}</div>}
       <button type="submit" disabled={loading} className="mt-3 py-2.5 bg-[#5C3A2E] text-[#E9D3BE] rounded text-[1.1rem] font-bold">
         {loading ? 'Creating...' : 'Sign Up'}
       </button>
       <button type="button" onClick={onLogInClick} className="mt-2.5 py-2 bg-transparent text-[#5C3A2E] rounded text-[1rem] font-bold w-full border border-[#5C3A2E]">
-        Log In
+        Already have an account? Log In
       </button>
     </form>
   );

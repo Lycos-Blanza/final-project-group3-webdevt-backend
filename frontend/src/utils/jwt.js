@@ -1,14 +1,13 @@
 // src/utils/jwt.js
-const SECRET = "diner28-super-secret-key-2025";
-
 export const generateToken = (user) => {
-  const payload = { email: user.email, role: user.role };
-  return btoa(JSON.stringify(payload)); // Simple base64 (demo only)
+  // No longer used – backend generates real JWT
+  return null;
 };
 
 export const verifyToken = (token) => {
   try {
-    return JSON.parse(atob(token));
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload;
   } catch {
     return null;
   }
