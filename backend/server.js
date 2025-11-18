@@ -3,13 +3,15 @@ const express = require('express');
 const morgan = require('morgan');
 const cors = require('cors');
 
-const connectDB = require('./config/db');
+// Fixed path — db.js is in root, not config
+const connectDB = require('./db');  // ← make sure it's './db' not './config/db'
 
 const authRoutes = require('./routes/auth.routes');
 const reservationRoutes = require('./routes/reservation.routes');
 const contactRoutes = require('./routes/contact.routes');
 const feedbackRoutes = require('./routes/feedback.routes');
 const restaurantRoutes = require('./routes/restaurant.routes');
+const tableRoutes = require('./routes/table.routes');
 
 const app = express();
 
@@ -18,7 +20,7 @@ app.use(morgan('dev'));
 app.use(express.json());
 
 // connect DB
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/reservation-db';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/diner28';
 connectDB(MONGO_URI);
 
 // routes
@@ -27,6 +29,7 @@ app.use('/api/reservations', reservationRoutes);
 app.use('/api/contacts', contactRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/restaurants', restaurantRoutes);
+app.use('/api/tables', tableRoutes);
 
 // health
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
