@@ -54,7 +54,7 @@ export default function CustomerReservations() {
             <div className="text-center py-20">
               <p className="text-2xl text-gray-600 mb-8">No upcoming reservations</p>
               <button
-                onClick={() => navigate("/reservation")}
+                onClick={() => navigate("/reserve")}
                 className="px-10 py-5 bg-[#5C3A2E] text-white text-xl rounded-xl font-bold hover:bg-[#4a2e24] transition shadow-lg"
               >
                 Reserve a Table Now

@@ -6,7 +6,8 @@ import { useTables } from "../contexts/TablesContext";
 import { useNotification } from "../contexts/NotificationContext";
 import { useAuth } from "../contexts/AuthContext";
 
-const HERO_IMAGE = "https://popmenucloud.com/cdn-cgi/image/width=1920,height=1920,fit=scale-down,format=auto,quality=60/dxkflgbu/c77222db-9b6a-49e4-a654-0f5b7c53e341.jpg";
+const HERO_IMAGE =
+  "https://popmenucloud.com/cdn-cgi/image/width=1920,height=1920,fit=scale-down,format=auto,quality=60/dxkflgbu/c77222db-9b6a-49e4-a654-0f5b7c53e341.jpg";
 
 const TIME_SLOTS = Array.from({ length: 34 }, (_, i) => {
   const hour = Math.floor(i / 2) + 6;
@@ -18,9 +19,18 @@ const RESERVATION_DURATION_MINUTES = 90;
 
 const isOverlapping = (t1, t2) => {
   const toMin = (t) => t.split(":").reduce((h, m) => h * 60 + +m, 0);
-  const s1 = toMin(t1), e1 = s1 + RESERVATION_DURATION_MINUTES;
-  const s2 = toMin(t2), e2 = s2 + RESERVATION_DURATION_MINUTES;
+  const s1 = toMin(t1),
+    e1 = s1 + RESERVATION_DURATION_MINUTES;
+  const s2 = toMin(t2),
+    e2 = s2 + RESERVATION_DURATION_MINUTES;
   return s1 < e2 && s2 < e1;
+};
+
+// GET PHILIPPINE TIME (UTC+8)
+const getPhilippineTime = () => {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 8 * 3600000);
 };
 
 export default function Reservation() {
@@ -34,42 +44,59 @@ export default function Reservation() {
 
   const { user } = useAuth();
   const { tables = [] } = useTables();
-  const { allReservations = [], createReservation, refetchAll } = useReservation(); // ← GLOBAL DATA
+  const {
+    allReservations = [],
+    createReservation,
+    refetchAll,
+  } = useReservation();
   const notify = useNotification();
   const navigate = useNavigate();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getPhilippineTime().toISOString().split("T")[0];
 
-  // GLOBAL TIME SLOT AVAILABILITY — CHECKS ALL BOOKINGS
+  const currentPhTime = () => {
+    const ph = getPhilippineTime();
+    return `${ph.getHours().toString().padStart(2, "0")}:${ph
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  const isTimeInPast = (timeSlot) => {
+    if (date !== today) return false;
+    return timeSlot < currentPhTime();
+  };
+
   const isTimeSlotAvailable = (testTime) => {
-    if (!date || !testTime) return false;
+    if (!date || !testTime || isTimeInPast(testTime)) return false;
 
-    const conflicting = allReservations.filter(r =>
-      r.date === date &&
-      r.status !== "Cancelled" &&
-      isOverlapping(testTime, r.timeSlot)
+    const conflicting = allReservations.filter(
+      (r) =>
+        r.date === date &&
+        r.status !== "Cancelled" &&
+        isOverlapping(testTime, r.timeSlot)
     );
 
-    const reservedTables = new Set(conflicting.map(r => r.tableNumber));
+    const reservedTables = new Set(conflicting.map((r) => r.tableNumber));
 
-    return tables.some(table =>
-      table.capacity >= Number(guests) &&
-      !reservedTables.has(table.number)
+    return tables.some(
+      (table) =>
+        table.capacity >= Number(guests) && !reservedTables.has(table.number)
     );
   };
 
-  // GLOBAL RESERVED TABLES FOR SELECTED TIME
   const getReservedTablesForSelectedTime = () => {
-    if (!date || !time) return new Set();
+    if (!date || !time || isTimeInPast(time)) return new Set();
 
     return new Set(
       allReservations
-        .filter(r =>
-          r.date === date &&
-          r.status !== "Cancelled" &&
-          isOverlapping(time, r.timeSlot)
+        .filter(
+          (r) =>
+            r.date === date &&
+            r.status !== "Cancelled" &&
+            isOverlapping(time, r.timeSlot)
         )
-        .map(r => r.tableNumber)
+        .map((r) => r.tableNumber)
     );
   };
 
@@ -83,6 +110,9 @@ export default function Reservation() {
     }
     if (!date || !time || !selectedTable) {
       return notify("Please select date, time and table", "error");
+    }
+    if (isTimeInPast(time)) {
+      return notify("Cannot book a past time", "error");
     }
     setShowPayment(true);
   };
@@ -102,7 +132,7 @@ export default function Reservation() {
       });
 
       notify("Reservation successful! Waiting for approval.", "success");
-      refetchAll?.(); // ← Refresh global data
+      refetchAll?.();
       navigate("/my-reservations");
     } catch (err) {
       notify("Reservation failed. Please try again.", "error");
@@ -112,7 +142,11 @@ export default function Reservation() {
   return (
     <div className="relative min-h-screen">
       <div className="absolute inset-0">
-        <img src={HERO_IMAGE} alt="Diner28" className="w-full h-full object-cover" />
+        <img
+          src={HERO_IMAGE}
+          alt="Diner28"
+          className="w-full h-full object-cover"
+        />
         <div className="absolute inset-0 bg-black/60" />
       </div>
 
@@ -121,17 +155,23 @@ export default function Reservation() {
           <h1 className="text-8xl lg:text-9xl xl:text-[200px] font-black text-white leading-none tracking-tighter drop-shadow-2xl">
             RESERVE
           </h1>
-          <p className="text-3xl text-white/90 mt-8 font-light">Your table awaits</p>
+          <p className="text-3xl text-white/90 mt-8 font-light">
+            Your table awaits
+          </p>
         </div>
 
         <div className="w-full max-w-2xl">
           <div className="bg-white/95 backdrop-blur-lg rounded-3xl shadow-2xl p-10 border border-white/30">
-            <h2 className="text-4xl font-bold text-center text-[#5C3A2E] mb-12">Book Your Table</h2>
+            <h2 className="text-4xl font-bold text-center text-[#5C3A2E] mb-12">
+              Book Your Table
+            </h2>
 
             <form onSubmit={handleProceed} className="space-y-10">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">Date</label>
+                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">
+                    Date
+                  </label>
                   <input
                     type="date"
                     min={today}
@@ -147,7 +187,9 @@ export default function Reservation() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">Time</label>
+                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">
+                    Time
+                  </label>
                   <select
                     value={time}
                     onChange={(e) => {
@@ -158,11 +200,15 @@ export default function Reservation() {
                     className="w-full px-5 py-4 rounded-2xl bg-[#FFF8F0] text-[#5C3A2E] focus:ring-4 focus:ring-[#5C3A2E]/20 outline-none"
                   >
                     <option value="">Select time</option>
-                    {TIME_SLOTS.map(t => {
+                    {TIME_SLOTS.map((t) => {
+                      const past = isTimeInPast(t);
                       const available = isTimeSlotAvailable(t);
+                      const disabled = past || !available;
+
                       return (
-                        <option key={t} value={t} disabled={!available}>
-                          {t} {!available && "(Fully Booked)"}
+                        <option key={t} value={t} disabled={disabled}>
+                          {t}{" "}
+                          {past ? "(-)" : !available ? "(Fully Booked)" : ""}
                         </option>
                       );
                     })}
@@ -170,7 +216,9 @@ export default function Reservation() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">Guests</label>
+                  <label className="block text-sm font-medium text-[#8B5A3C] mb-2">
+                    Guests
+                  </label>
                   <input
                     type="number"
                     min="1"
@@ -186,10 +234,12 @@ export default function Reservation() {
                 </div>
               </div>
 
-              {/* TABLE GRID — SHOWS REAL GLOBAL STATUS */}
-              {date && time && (
+              {/* TABLE GRID */}
+              {date && time && !isTimeInPast(time) && (
                 <div>
-                  <p className="text-lg font-semibold text-[#8B5A3C] mb-6">Choose Your Table</p>
+                  <p className="text-lg font-semibold text-[#8B5A3C] mb-6">
+                    Choose Your Table
+                  </p>
                   <div className="grid grid-cols-4 sm:grid-cols-5 gap-5">
                     {tables.map((table) => {
                       const isReserved = reservedTables.has(table.number);
@@ -199,24 +249,33 @@ export default function Reservation() {
 
                       return (
                         <button
-                          key={table.number}
+                          key={table.numberNumber}
                           type="button"
                           onClick={() => canBook && setSelectedTable(table)}
                           disabled={!canBook}
                           className={`
                             relative w-24 h-24 rounded-2xl font-bold transition-all border-4 flex flex-col items-center justify-center shadow-lg
-                            ${isSelected
-                              ? "bg-[#5C3A2E] text-white border-[#5C3A2E] scale-110 ring-8 ring-green-400/50"
-                              : canBook
-                              ? "bg-white text-[#5C3A2E] border-[#5C3A2E] hover:scale-110"
-                              : "bg-gray-200 text-gray-500 border-gray-400 cursor-not-allowed"
+                            ${
+                              isSelected
+                                ? "bg-[#5C3A2E] text-white border-[#5C3A2E] scale-110 ring-8 ring-green-400/50"
+                                : canBook
+                                ? "bg-white text-[#5C3A2E] border-[#5C3A2E] hover:scale-110"
+                                : "bg-gray-200 text-gray-500 border-gray-400 cursor-not-allowed"
                             }
                           `}
                         >
                           <div className="text-2xl">{table.number}</div>
                           <div className="text-xs">{table.capacity}p</div>
-                          {isReserved && <div className="text-xs text-red-600 font-bold">Reserved</div>}
-                          {tooSmall && !isReserved && <div className="text-xs text-orange-600">Too small</div>}
+                          {isReserved && (
+                            <div className="text-xs text-red-600 font-bold">
+                              Reserved
+                            </div>
+                          )}
+                          {tooSmall && !isReserved && (
+                            <div className="text-xs text-orange-600">
+                              Too small
+                            </div>
+                          )}
                           {isSelected && (
                             <div className="absolute -top-3 bg-green-600 text-white px-3 py-1 rounded-full text-xs font-bold">
                               SELECTED
@@ -230,7 +289,9 @@ export default function Reservation() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-[#8B5A3C] mb-2">Special Request (Optional)</label>
+                <label className="block text-sm font-medium text-[#8B5A3C] mb-2">
+                  Special Request (Optional)
+                </label>
                 <textarea
                   value={specialRequest}
                   onChange={(e) => setSpecialRequest(e.target.value)}
@@ -242,34 +303,58 @@ export default function Reservation() {
 
               <button
                 type="submit"
-                disabled={!selectedTable}
+                disabled={!selectedTable || isTimeInPast(time)}
                 className={`w-full py-6 text-2xl font-bold rounded-2xl transition-all shadow-xl ${
-                  selectedTable
+                  selectedTable && !isTimeInPast(time)
                     ? "bg-[#5C3A2E] text-white hover:bg-[#4a2e24]"
                     : "bg-gray-400 text-gray-700 cursor-not-allowed"
                 }`}
               >
-                {selectedTable ? "Proceed to Payment" : "Select a table first"}
+                {selectedTable && !isTimeInPast(time)
+                  ? "Proceed to Payment"
+                  : "Select a valid time & table"}
               </button>
             </form>
           </div>
         </div>
       </div>
 
-      {/* PAYMENT MODAL */}
+      {/* PAYMENT MODAL — SAME AS BEFORE */}
       {showPayment && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-10">
-            <h2 className="text-4xl font-bold text-center text-[#5C3A2E] mb-8">Confirm & Pay</h2>
+            <h2 className="text-4xl font-bold text-center text-[#5C3A2E] mb-8">
+              Confirm & Pay
+            </h2>
             <div className="bg-[#FFF8F0] p-8 rounded-2xl space-y-4 mb-8">
-              <p><strong>Date:</strong> {new Date(date).toLocaleDateString("en-US", { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-              <p><strong>Time:</strong> {time}</p>
-              <p><strong>Guests:</strong> {guests}</p>
-              <p><strong>Table:</strong> {selectedTable.number} ({selectedTable.capacity} seats)</p>
-              {specialRequest && <p><strong>Request:</strong> {specialRequest}</p>}
+              <p>
+                <strong>Date:</strong>{" "}
+                {new Date(date).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
+                })}
+              </p>
+              <p>
+                <strong>Time:</strong> {time}
+              </p>
+              <p>
+                <strong>Guests:</strong> {guests}
+              </p>
+              <p>
+                <strong>Table:</strong> {selectedTable.number} (
+                {selectedTable.capacity} seats)
+              </p>
+              {specialRequest && (
+                <p>
+                  <strong>Request:</strong> {specialRequest}
+                </p>
+              )}
             </div>
             <div className="bg-amber-100 p-6 rounded-2xl text-center mb-8">
-              <p className="text-3xl font-bold text-[#5C3A2E]">₱300 Downpayment</p>
+              <p className="text-3xl font-bold text-[#5C3A2E]">
+                ₱300 Downpayment
+              </p>
             </div>
             <div className="space-y-4">
               {["GCash", "Debit/Credit Card", "Cash On-Site"].map((m) => (
@@ -277,7 +362,9 @@ export default function Reservation() {
                   key={m}
                   onClick={() => setSelectedPayment(m)}
                   className={`w-full py-5 rounded-2xl font-bold text-xl transition-all ${
-                    selectedPayment === m ? "bg-[#5C3A2E] text-white" : "bg-[#FFF8F0] text-[#5C3A2E]"
+                    selectedPayment === m
+                      ? "bg-[#5C3A2E] text-white"
+                      : "bg-[#FFF8F0] text-[#5C3A2E]"
                   }`}
                 >
                   {m}

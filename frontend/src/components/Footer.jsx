@@ -20,9 +20,9 @@ export default function Footer() {
   return (
     <>
       {/* Spacer */}
-      <div className="h-4 bg-[#f6f0e7]" aria-hidden="true" />
-
-      <footer className="bg-[#6d4c1b] py-8 text-white relative">
+      {/*<div className="h-4 bg-[#f6f0e7]" aria-hidden="true" />*/}
+      
+      <footer className="bg-[#6D3811] py-8 text-white relative">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <h1 className="text-3xl font-black mb-4 tracking-tight">DINER28 Team</h1>
           <p className="opacity-70 mb-6 text-sm">Click to see our GitHub accounts!</p>

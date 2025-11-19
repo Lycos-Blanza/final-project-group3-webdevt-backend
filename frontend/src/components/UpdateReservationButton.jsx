@@ -19,57 +19,61 @@ const isOverlapping = (t1, t2) => {
   return s1 < e2 && s2 < e1;
 };
 
+// GET PHILIPPINE TIME (UTC+8)
+const getPhilippineTime = () => {
+  const now = new Date();
+  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+  return new Date(utc + 8 * 3600000); // Philippines = UTC+8
+};
+
 export default function UpdateReservationButton({ reservation: originalRes }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [date, setDate] = useState(originalRes.date);
+  const [date, setDate] = useState(originalRes.date.split("T")[0]);
   const [time, setTime] = useState(originalRes.timeSlot);
   const [guests, setGuests] = useState(originalRes.guests);
   const [specialRequest, setSpecialRequest] = useState(originalRes.specialRequest || "");
 
-  const { reservations = [], updateReservation, refetch } = useReservation();
+  const { allReservations = [], updateReservation, refetchAll } = useReservation();
   const { tables = [] } = useTables();
   const notify = useNotification();
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = getPhilippineTime().toISOString().split("T")[0];
 
-  // Check if a time slot has any available table for current guest count
-  const isTimeSlotAvailable = (testTime) => {
-    const conflicting = reservations.filter(r =>
-      r._id !== originalRes._id &&
-      r.date === date &&
-      r.status !== "Cancelled" &&
-      isOverlapping(testTime, r.timeSlot)
-    );
-
-    const reservedTables = new Set(conflicting.map(r => r.tableNumber));
-
-    return tables.some(table =>
-      table.capacity >= Number(guests) &&
-      !reservedTables.has(table.number)
-    );
+  const currentPhTime = () => {
+    const ph = getPhilippineTime();
+    return `${ph.getHours().toString().padStart(2, "0")}:${ph.getMinutes().toString().padStart(2, "0")}`;
   };
 
-  // Final check before save
-  const getAvailableTable = () => {
-    const conflicting = reservations.filter(r =>
+  const isTimeInPast = (timeSlot) => {
+    if (date !== today) return false;
+    return timeSlot < currentPhTime();
+  };
+
+  const findAvailableTable = () => {
+    const conflicting = allReservations.filter(r =>
       r._id !== originalRes._id &&
       r.date === date &&
       r.status !== "Cancelled" &&
       isOverlapping(time, r.timeSlot)
     );
 
-    const reserved = new Set(conflicting.map(r => r.tableNumber));
+    const reservedTables = new Set(conflicting.map(r => r.tableNumber));
 
     return tables.find(table =>
       table.capacity >= Number(guests) &&
-      !reserved.has(table.number)
+      !reservedTables.has(table.number)
     );
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
 
-    const availableTable = getAvailableTable();
+    if (isTimeInPast(time)) {
+      notify("Cannot update to a past time", "error");
+      return;
+    }
+
+    const availableTable = findAvailableTable();
 
     if (!availableTable) {
       notify(`No table available for ${guests} guests at ${time} on ${date}`, "error");
@@ -86,10 +90,11 @@ export default function UpdateReservationButton({ reservation: originalRes }) {
         status: "Pending"
       });
 
+      notify("Reservation updated! Waiting for admin approval.", "success");
       setIsEditing(false);
-      refetch?.();
+      refetchAll?.();
     } catch (err) {
-      // Error already handled in context
+      notify("Failed to update reservation", "error");
     }
   };
 
@@ -132,10 +137,20 @@ export default function UpdateReservationButton({ reservation: originalRes }) {
             >
               <option value="">Select time</option>
               {TIME_SLOTS.map(t => {
-                const available = isTimeSlotAvailable(t);
+                const past = isTimeInPast(t);
+                const conflicting = allReservations.filter(r =>
+                  r._id !== originalRes._id &&
+                  r.date === date &&
+                  r.status !== "Cancelled" &&
+                  isOverlapping(t, r.timeSlot)
+                );
+                const reserved = new Set(conflicting.map(r => r.tableNumber));
+                const hasTable = tables.some(tbl => tbl.capacity >= guests && !reserved.has(tbl.number));
+                const disabled = past || !hasTable;
+
                 return (
-                  <option key={t} value={t} disabled={!available}>
-                    {t} {!available && "(No table available)"}
+                  <option key={t} value={t} disabled={disabled}>
+                    {t} {past ? "(-)" : !hasTable ? "(No table available)" : ""}
                   </option>
                 );
               })}
@@ -156,23 +171,27 @@ export default function UpdateReservationButton({ reservation: originalRes }) {
           </div>
 
           <div>
-            <label className="block text-lg font-medium text-[#5C3A2E] mb-2">Special Request (Optional)</label>
+            <label className="block text-lg font-medium text-[#5C3A2E] mb-2">Special Request</label>
             <textarea
               value={specialRequest}
               onChange={(e) => setSpecialRequest(e.target.value)}
               rows="3"
               className="w-full px-5 py-4 rounded-xl bg-[#FFF8F0] resize-none focus:ring-4 focus:ring-[#5C3A2E]/30 outline-none"
-              placeholder="Birthday, window seat, etc..."
+              placeholder="Birthday, high chair, etc..."
             />
           </div>
 
           <div className="flex gap-4 pt-6">
             <button
               type="submit"
-              disabled={!time || !date || !isTimeSlotAvailable(time)}
-              className="flex-1 py-5 bg-[#5C3A2E] text-white font-bold text-xl rounded-xl hover:bg-[#4a2e24] transition shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isTimeInPast(time)}
+              className={`flex-1 py-5 font-bold text-xl rounded-xl transition shadow-lg ${
+                isTimeInPast(time)
+                  ? "bg-gray-400 text-gray-700 cursor-not-allowed"
+                  : "bg-[#5C3A2E] text-white hover:bg-[#4a2e24]"
+              }`}
             >
-              Save Changes
+              {isTimeInPast(time) ? "Cannot Save Past Time" : "Save Changes"}
             </button>
             <button
               type="button"

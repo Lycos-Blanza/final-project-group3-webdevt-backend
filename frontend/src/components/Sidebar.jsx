@@ -33,7 +33,7 @@ export default function Sidebar({ open, onClose }) {
         }}
       >
         <button
-          className="absolute top-3 right-4 bg-none border-none text-[2rem] text-[#222] cursor-pointer"
+          className="absolute top-3 right-4 bg-none border-none text-[2rem] text-[#6D3811] cursor-pointer"
           onClick={onClose}
           aria-label="Close"
         >
@@ -42,7 +42,7 @@ export default function Sidebar({ open, onClose }) {
 
         {!user ? (
           <>
-            <div className="text-[1.5rem] font-bold mb-8 text-[#222]">
+            <div className="text-[1.5rem] font-bold mb-8 text-[#6D3811]">
               {showSignUp ? 'Sign In' : 'Log-In'}
             </div>
             {!showSignUp ? (
