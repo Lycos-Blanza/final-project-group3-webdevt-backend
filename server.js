@@ -1,8 +1,9 @@
 // backend/server.js
 require("dotenv").config();
 const express = require("express");
-const morgan = require("morgan");
 const cors = require("cors");
+const morgan = require("morgan");
+
 const connectDB = require("./db");
 
 const authRoutes = require("./routes/auth.routes");
@@ -14,44 +15,52 @@ const tableRoutes = require("./routes/table.routes");
 
 const app = express();
 
-// === MIDDLEWARE ===
+// Middleware
 app.use(cors({ origin: true, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
 
-// === ROOT & HEALTH ===
+// Root
 app.get("/", (req, res) => {
-  res.json({ message: "Diner28 API is LIVE!", status: "ok" });
+  res.json({ message: "Diner28 API is running!", uptime: process.uptime() });
 });
 
+// Health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok", time: new Date().toISOString() });
 });
 
-// === LAZY MONGO CONNECTION (ONLY WHEN NEEDED) ===
-let isConnected = false;
-const connectWithRetry = async () => {
-  if (isConnected) return;
-  const uri = process.env.MONGO_URI;
-  if (!uri) {
-    console.error("MONGO_URI missing!");
-    return;
-  }
-  try {
-    await connectDB(uri);
-    isConnected = true;
-  } catch (err) {
-    console.error("Failed to connect to MongoDB:", err.message);
-  }
+// === LAZY MONGO CONNECT — ONLY WHEN FIRST REQUEST COMES ===
+let connectionPromise = null;
+
+const ensureDBConnected = async () => {
+  if (connectionPromise) return connectionPromise;
+
+  connectionPromise = (async () => {
+    try {
+      if (!process.env.MONGO_URI) throw new Error("MONGO_URI missing");
+      await connectDB(process.env.MONGO_URI);
+      console.log("MongoDB connected");
+    } catch (err) {
+      console.error("MongoDB failed:", err.message);
+      throw err;
+    }
+  })();
+
+  return connectionPromise;
 };
 
-// Run connection on EVERY request (safe for serverless)
+// Run before every route
 app.use(async (req, res, next) => {
-  await connectWithRetry();
-  next();
+  try {
+    await ensureDBConnected();
+    next();
+  } catch (err) {
+    res.status(500).json({ error: "Database connection failed" });
+  }
 });
 
-// === ROUTES ===
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/contacts", contactRoutes);
@@ -59,13 +68,11 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/tables", tableRoutes);
 
-// === LOCAL DEV ONLY ===
+// Local dev only
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Local server running on http://localhost:${PORT}`);
-  });
+  app.listen(PORT, () => console.log(`Local: http://localhost:${PORT}`));
 }
 
-// === EXPORT FOR VERCEL ===
+// Export for Vercel
 module.exports = app;
