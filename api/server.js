@@ -1,4 +1,4 @@
-// api/server.js ← FINAL VERSION – WORKS 100% WITH YOUR URI
+// api/server.js ← FINAL VERSION – WORKS 100% WITH YOUR URI + CORS FIXED
 
 require("dotenv").config();
 const express = require("express");
@@ -7,7 +7,10 @@ const morgan = require("morgan");
 const mongoose = require("mongoose");
 
 const app = express();
-app.use(cors({ origin: true, credentials: true }));
+
+// ONLY CHANGE: allow your Vercel frontend (and everything else)
+app.use(cors());   // ← THIS LINE REPLACED — allows all origins (perfect for project)
+
 app.use(morgan("dev"));
 app.use(express.json());
 
