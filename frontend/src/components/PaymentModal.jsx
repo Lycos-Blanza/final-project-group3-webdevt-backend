@@ -1,92 +1,45 @@
 // src/components/PaymentModal.jsx
-import React, { useState, useEffect } from "react";
-
-export default function PaymentModal({ reservation, onSuccess, onClose }) {
-  const [method, setMethod] = useState("gcash");
-  const [timeLeft, setTimeLeft] = useState(1800); // 30 minutes
-
-  useEffect(() => {
-    if (timeLeft > 0) {
-      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      onClose();
-      alert("Payment window expired!");
-    }
-  }, [timeLeft, onClose]);
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const handlePay = () => {
-    onSuccess();
-  };
+export default function PaymentModal({ reservation, onClose, onSuccess }) {
+  const downpayment = 300;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-xl shadow-xl max-w-md w-full">
-        <h3 className="text-xl font-bold mb-4 text-center text-[#6d4c1b]">
-          Complete Payment
-        </h3>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-2xl w-full mx-4 shadow-2xl">
+        <h2 className="text-3xl font-bold text-[#5C3A2E] mb-6 text-center">Complete Your Reservation</h2>
 
-        <div className="text-center mb-4">
-          <p className="text-sm text-gray-600">
-            Reservation: {reservation.date} @ {reservation.time}
-          </p>
-          <p className="text-lg font-bold text-red-600">
-            Time left: {formatTime(timeLeft)}
-          </p>
+        <ReservationSummary reservation={reservation} />
+
+        <div className="my-8 p-6 bg-[#FFF5E1] rounded-xl">
+          <p className="text-xl font-bold text-[#5C3A2E]">Downpayment Required:</p>
+          <p className="text-4xl font-bold text-[#5C3A2E]">₱{downpayment}</p>
+          <p className="text-sm text-gray-600 mt-2">Balance payable on-site</p>
         </div>
 
-        <div className="space-y-3">
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="method"
-              value="gcash"
-              checked={method === "gcash"}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-5 h-5"
-            />
-            <span>GCash</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="method"
-              value="maya"
-              checked={method === "maya"}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-5 h-5"
-            />
-            <span>Maya</span>
-          </label>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="radio"
-              name="method"
-              value="card"
-              checked={method === "card"}
-              onChange={(e) => setMethod(e.target.value)}
-              className="w-5 h-5"
-            />
-            <span>Credit/Debit Card</span>
-          </label>
+        <div className="space-y-4">
+          <p className="font-semibold text-[#5C3A2E]">Payment Method:</p>
+          <div className="grid grid-cols-3 gap-4">
+            <button className="p-6 border-2 border-[#E9D3BE] rounded-xl hover:border-[#5C3A2E] font-bold">
+              GCash
+            </button>
+            <button className="p-6 border-2 border-[#E9D3BE] rounded-xl hover:border-[#5C3A2E] font-bold">
+              Card
+            </button>
+            <button className="p-6 border-2 border-[#E9D3BE] rounded-xl hover:border-[#5C3A2E] font-bold">
+              Cash On-Site
+            </button>
+          </div>
         </div>
 
-        <div className="mt-6 flex gap-3">
+        <div className="flex gap-4 mt-8">
           <button
-            onClick={handlePay}
-            className="flex-1 bg-green-600 text-white py-3 rounded-lg font-bold hover:bg-green-700"
+            onClick={onSuccess}
+            className="flex-1 py-5 bg-[#5C3A2E] text-white text-xl font-bold rounded-xl hover:bg-[#4a2e24]"
           >
-            Pay Now
+            Confirm & Pay ₱{downpayment}
           </button>
           <button
             onClick={onClose}
-            className="flex-1 bg-gray-300 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-400"
+            className="px-8 py-5 border-2 border-red-600 text-red-600 font-bold rounded-xl hover:bg-red-50"
           >
             Cancel
           </button>

@@ -40,7 +40,7 @@ export default function Footer() {
             </li>
             <li>
               <a
-                href="https://github.com/Zogratis2"
+                href="https://github.com/OninAvonasac"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="hover:underline hover:text-[#E9D3BE] transition-colors duration-200"

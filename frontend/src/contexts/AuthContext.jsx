@@ -51,11 +51,12 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem("diner28_token");
     setUser(null);
+    localStorage.removeItem("token");
     notify("Logged out successfully", "success");
   };
 
   const updateProfile = (updates) => {
-    setUser(prev => ({ ...prev, ...updates }));
+    setUser((prev) => ({ ...prev, ...updates }));
   };
 
   const value = {

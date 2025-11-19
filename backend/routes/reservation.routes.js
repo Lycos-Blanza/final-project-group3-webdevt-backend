@@ -10,6 +10,7 @@ router.get('/', ctrl.getReservations);
 router.post('/', ctrl.createReservation);
 router.put('/:id', ctrl.updateReservation);
 router.delete('/:id', ctrl.deleteReservation);
+router.get('/availability', ctrl.getAvailableTables);
 
 // Admin-only status patch
 router.patch('/:id/:status', permit('admin'), ctrl.patchStatus);

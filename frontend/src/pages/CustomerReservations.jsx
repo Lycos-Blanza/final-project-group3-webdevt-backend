@@ -1,92 +1,106 @@
 // src/pages/CustomerReservations.jsx
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
+import { useReservation } from "../contexts/ReservationContext"; // ← THIS IS THE KEY FIX
 import { useTables } from "../contexts/TablesContext";
 import { useNavigate } from "react-router-dom";
 import CancelReservationButton from "../components/CancelReservationButton";
 import UpdateReservationButton from "../components/UpdateReservationButton";
 
 export default function CustomerReservations() {
-  const { user, reservations, STATUS } = useAuth();
+  const { user } = useAuth();
+  const { reservations = [], loading } = useReservation(); // ← Safe + default empty array
   const { tables } = useTables();
   const navigate = useNavigate();
 
-  
-  // Only show PENDING
-  const pendingReservations = reservations.filter(r => r.status === STATUS.PENDING);
+  if (loading) {
+    return (
+      <div className="pt-[56px] min-h-screen bg-[#f6f0e7] flex items-center justify-center">
+        <p className="text-2xl text-[#5C3A2E] font-bold">Loading reservations...</p>
+      </div>
+    );
+  }
 
-  // ONLY show banner if a reservation was changed FROM PENDING → CONFIRMED or CANCELED
-  const hasChanges = reservations.some(r =>
-    (r.status === STATUS.CONFIRMED || r.status === STATUS.CANCELED) &&
-    r.originalStatus === STATUS.PENDING
-  );
+  const pendingReservations = reservations.filter(r => r.status === "Pending");
 
   return (
     <div className="pt-[56px] mx-auto max-w-[1200px] px-4 bg-[#f6f0e7] min-h-screen">
       <div className="flex justify-center items-start pt-20 pb-20">
-        <div className="text-black bg-white px-10 py-8 rounded-[8px] shadow-[0_2px_8px_rgba(0,0,0,0.08)] min-w-[350px] w-full max-w-3xl">
-          
-          <h2 className="text-black text-2xl font-bold text-center mb-6">
+        <div className="bg-white px-10 py-12 rounded-2xl shadow-2xl w-full max-w-4xl">
+
+          <h2 className="text-4xl font-bold text-center mb-10 text-[#5C3A2E]">
             My Reservations
           </h2>
 
-          {/* CHANGE BANNER */}
-          {hasChanges && (
-            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-              <p className="text-blue-800 font-medium">
-                Changes have been made to your reservation.{" "}
-                <span
-                  onClick={() => navigate("/my-history")}
-                  className="underline text-blue-600 hover:text-blue-800 cursor-pointer font-semibold"
-                >
-                  See History →
-                </span>
-              </p>
-            </div>
-          )}
-
-          {/* NO LOGIN */}
+          {/* NO USER */}
           {!user ? (
-            <div className="text-black mt-4 text-center">
-              You must <b>login</b> to view your reservations.
+            <div className="text-center py-16 bg-gray-50 rounded-xl">
+              <p className="text-xl text-gray-700 mb-6">Please log in to view your reservations</p>
+              <button
+                onClick={() => navigate("/login")}
+                className="px-8 py-4 bg-[#5C3A2E] text-white rounded-xl font-bold hover:bg-[#4a2e24] transition"
+              >
+                Log In Now
+              </button>
             </div>
           ) : pendingReservations.length === 0 ? (
-            <div className="text-black mt-8 text-[1.1rem] text-center text-gray-600">
-              No pending reservations.
+            <div className="text-center py-20">
+              <p className="text-2xl text-gray-600 mb-8">No pending reservations</p>
+              <button
+                onClick={() => navigate("/reservation")}
+                className="px-10 py-5 bg-[#5C3A2E] text-white text-xl rounded-xl font-bold hover:bg-[#4a2e24] transition shadow-lg"
+              >
+                Reserve a Table Now
+              </button>
             </div>
           ) : (
-            <ul className="list-none p-0 space-y-4">
-              {pendingReservations.map((res) => (
-                <li
-                  key={res.id}
-                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <div className="flex flex-col gap-2 text-[1.1rem] text-black">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <span><strong>Date:</strong> {res.date}</span>
-                      <span><strong>Time:</strong> {res.time} – {res.endTime}</span>
+            <div className="space-y-8">
+              {pendingReservations.map((res) => {
+                const table = tables.find(t =>
+                  t._id === res.tableNumber ||
+                  t.number === res.tableNumber ||
+                  t.id === res.tableNumber
+                );
+
+                return (
+                  <div
+                    key={res._id || res.id}
+                    className="p-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 shadow-md"
+                  >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-lg">
+                      <div>
+                        <strong className="text-[#5C3A2E]">Date:</strong>{" "}
+                        {new Date(res.date).toLocaleDateString("en-US", {
+                          weekday: "long",
+                          month: "long",
+                          day: "numeric",
+                        })}
+                      </div>
+                      <div><strong className="text-[#5C3A2E]">Time:</strong> {res.timeSlot}</div>
+                      <div><strong className="text-[#5C3A2E]">Guests:</strong> {res.guests}</div>
+                      <div>
+                        <strong className="text-[#5C3A2E]">Table:</strong>{" "}
+                        {table?.number || "N/A"}{table && ` (up to ${table.capacity} seats)`}
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <span><strong>Guests:</strong> {res.guests}</span>
-                      <span>
-                        <strong>Table:</strong>{" "}
-                        {tables.find(t => t.id === res.tableId)?.number || "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-yellow-600 font-semibold">Pending</span>
-                      <CancelReservationButton reservationId={res.id} />
-                      <UpdateReservationButton reservation={res} />
-                    </div>
-                    {res.note && (
-                      <div className="text-sm text-gray-700 mt-2 pl-2 border-l-2 border-gray-300">
-                        <span className="font-medium">Note:</span> {res.note}
+
+                    {res.specialRequest && (
+                      <div className="mt-6 p-4 bg-white/80 rounded-xl border-l-4 border-amber-400">
+                        <strong>Note:</strong> {res.specialRequest}
                       </div>
                     )}
+
+                    <div className="mt-8 flex flex-wrap items-center gap-4">
+                      <span className="px-6 py-3 bg-yellow-100 text-yellow-800 rounded-full font-bold text-sm">
+                        Pending Approval
+                      </span>
+                      <CancelReservationButton reservationId={res._id || res.id} />
+                      <UpdateReservationButton reservation={res} />
+                    </div>
                   </div>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

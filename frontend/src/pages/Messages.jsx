@@ -23,7 +23,7 @@ export default function Messages() {
           {messages.map((msg) => (
             <div key={msg.id} className="bg-white p-5 rounded-xl shadow">
               <p>
-                <strong>From:</strong> {msg.name} ({msg.email})
+                <strong>From:</strong> {msg.email}
               </p>
               <p className="text-sm text-gray-600">
                 {new Date(msg.date).toLocaleString()}

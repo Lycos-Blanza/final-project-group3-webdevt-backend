@@ -1,25 +1,29 @@
 // src/components/CancelReservationButton.jsx
-import React from "react";
-import { useAuth } from "../contexts/AuthContext";
+import { useReservation } from "../contexts/ReservationContext";
 import { useNotification } from "../contexts/NotificationContext";
 
 export default function CancelReservationButton({ reservationId }) {
-  const { updateReservation, STATUS } = useAuth();
+  const { cancelReservation, refetch } = useReservation();
   const notify = useNotification();
 
-  const handleCancel = () => {
-    if (window.confirm("Cancel this reservation?")) {
-      updateReservation({ id: reservationId, status: STATUS.CANCELED });
-      notify("Reservation canceled.", "error");
+  const handleCancel = async () => {
+    if (!window.confirm("Are you sure you want to cancel this reservation?")) return;
+
+    try {
+      await cancelReservation(reservationId);
+      notify("Reservation cancelled successfully", "success");
+      refetch();
+    } catch (err) {
+      notify("Failed to cancel", "error");
     }
   };
 
   return (
     <button
       onClick={handleCancel}
-      className="text-red-600 text-sm underline hover:text-red-800"
+      className="px-6 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition shadow-md"
     >
-      Cancel
+      Cancel Reservation
     </button>
   );
 }
