@@ -27,6 +27,15 @@ app.use(
 app.use(morgan("dev"));
 app.use(express.json());
 
+// In backend/server.js — add this right after app.use(express.json());
+app.get("/", (req, res) => {
+  res.json({
+    message: "Diner28 API is live! 🚀",
+    status: "ok",
+    version: "1.0.0",
+  });
+});
+
 // Database connection
 const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/diner28";
 connectDB(MONGO_URI);
