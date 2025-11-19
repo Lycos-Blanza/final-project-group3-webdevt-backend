@@ -4,7 +4,6 @@ import api from "../api/api";
 import { useNotification } from "./NotificationContext";
 
 const TablesContext = createContext();
-
 export const useTables = () => useContext(TablesContext);
 
 export function TablesProvider({ children }) {
@@ -14,10 +13,10 @@ export function TablesProvider({ children }) {
 
   const fetchTables = async () => {
     try {
-      const res = await api.get("/tables");
+      const res = await api.get("/api/tables"); // ← ADD /api
       setTables(res.data.tables.map(t => ({
-        id: t._id || t.tableNumber,
-        number: t.tableNumber,
+        id: t._id || t.number,
+        number: t.number || t.tableNumber,
         capacity: t.capacity
       })));
     } catch (err) {
@@ -31,14 +30,8 @@ export function TablesProvider({ children }) {
     fetchTables();
   }, []);
 
-  const value = {
-    tables,
-    loading,
-    refetch: fetchTables
-  };
-
   return (
-    <TablesContext.Provider value={value}>
+    <TablesContext.Provider value={{ tables, loading, refetch: fetchTables }}>
       {children}
     </TablesContext.Provider>
   );

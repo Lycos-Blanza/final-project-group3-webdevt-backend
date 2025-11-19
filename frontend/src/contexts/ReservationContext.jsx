@@ -1,94 +1,100 @@
-// src/contexts/ReservationContext.jsx → FINAL FIXED VERSION
+// src/contexts/ReservationContext.jsx
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../api/api";
 import { useNotification } from "./NotificationContext";
 import { useAuth } from "./AuthContext";
 
 const ReservationContext = createContext();
-
 export const useReservation = () => useContext(ReservationContext);
 
 export function ReservationProvider({ children }) {
-  const [reservations, setReservations] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [myReservations, setMyReservations] = useState([]);
+  const [allReservations, setAllReservations] = useState([]);     // ← Global (for booking)
+  const [loadingMy, setLoadingMy] = useState(true);               // ← Only blocks My Reservations
+  const [loadingAll, setLoadingAll] = useState(true);             // ← NEVER blocks UI
   const { user, logout } = useAuth();
   const notify = useNotification();
 
-  const fetchReservations = async () => {
+  // 1. Load user's own reservations (for My Reservations page)
+  const fetchMyReservations = async () => {
     if (!user) {
-      setReservations([]);
-      setLoading(false);
+      setMyReservations([]);
+      setLoadingMy(false);
+      return;
+    }
+    try {
+      setLoadingMy(true);
+      const res = await api.get("/api/reservations");
+      setMyReservations(res.data.reservations || []);
+    } catch (err) {
+      if (err.response?.status === 401) logout();
+    } finally {
+      setLoadingMy(false);
+    }
+  };
+
+  // 2. Load ALL reservations (for booking page) — NON-BLOCKING!
+  const fetchAllReservations = async () => {
+    if (!user) {
+      setAllReservations([]);
+      setLoadingAll(false);
       return;
     }
 
     try {
-      setLoading(true);
-      const res = await api.get("/reservations");
-      setReservations(res.data.reservations || []);
+      setLoadingAll(true);
+      const res = await api.get("/api/reservations/all");
+      setAllReservations(res.data.reservations || []);
     } catch (err) {
-      if (err.response?.status === 401) {
-        logout();
-        notify("Session expired. Please log in again.", "info");
-      } else {
-        notify("Failed to load reservations", "error");
-      }
+      console.warn("Global reservations failed to load — continuing anyway", err);
+      // NEVER crash the app — fallback to user's own (safe)
+      setAllReservations(myReservations);
     } finally {
-      setLoading(false);
+      setLoadingAll(false);
     }
   };
 
   const createReservation = async (data) => {
-    try {
-      const res = await api.post("/reservations", data);
-      // Optimistically add to list
-      setReservations(prev => [res.data.reservation, ...prev]);
-      notify("Reservation created successfully!", "success");
-      return res.data.reservation;
-    } catch (err) {
-      const msg = err.response?.data?.message || "Reservation failed";
-      notify(msg, "error");
-      throw err;
-    }
+    const res = await api.post("/api/reservations", data);
+    const newRes = res.data.reservation;
+    setMyReservations(prev => [newRes, ...prev]);
+    setAllReservations(prev => [newRes, ...prev]);
+    notify("Reservation created!", "success");
+    return newRes;
   };
 
   const cancelReservation = async (id) => {
-    try {
-      await api.delete(`/reservations/${id}`);
-      setReservations(prev => prev.filter(r => r._id !== id));
-      notify("Reservation cancelled", "success");
-    } catch (err) {
-      notify("Failed to cancel", "error");
-    }
+    await api.delete(`/api/reservations/${id}`);
+    setMyReservations(prev => prev.filter(r => r._id !== id));
+    setAllReservations(prev => prev.filter(r => r._id !== id));
   };
 
-  const updateReservationStatus = async (id, status) => {
-    try {
-      const res = await api.patch(`/reservations/${id}/${status}`);
-      setReservations(prev =>
-        prev.map(r => (r._id === id ? res.data.reservation : r))
-      );
-      notify(`Reservation ${status.toLowerCase()}`, "success");
-    } catch (err) {
-      notify("Failed to update status", "error");
-    }
+  const updateReservation = async (id, data) => {
+    const res = await api.put(`/api/reservations/${id}`, data);
+    const updated = res.data.reservation;
+    setMyReservations(prev => prev.map(r => r._id === id ? updated : r));
+    setAllReservations(prev => prev.map(r => r._id === id ? updated : r));
+    notify("Reservation updated!", "success");
+    return updated;
   };
 
-  // REFRESH EVERY TIME USER CHANGES (login/logout)
   useEffect(() => {
-    fetchReservations();
-  }, [user]); // ← THIS IS THE KEY LINE
+    fetchMyReservations();
+    fetchAllReservations(); // ← Runs in background, never blocks
+  }, [user]);
 
   return (
-    <ReservationContext.Provider
-      value={{
-        reservations,
-        loading,
-        createReservation,
-        cancelReservation,
-        updateReservationStatus,
-        refetch: fetchReservations,
-      }}
-    >
+    <ReservationContext.Provider value={{
+      reservations: myReservations,
+      allReservations,
+      loading: loadingMy,           // ← Only my reservations block UI
+      loadingAll,                   // ← Booking page can show spinner separately if needed
+      createReservation,
+      cancelReservation,
+      updateReservation,
+      refetch: fetchMyReservations,
+      refetchAll: fetchAllReservations,
+    }}>
       {children}
     </ReservationContext.Provider>
   );

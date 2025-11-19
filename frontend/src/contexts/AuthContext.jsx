@@ -10,13 +10,11 @@ export const useAuth = () => useContext(AuthContext);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const notify = useNotification();
+  const notify = useNotification(); // ← Now just a function
 
-  // Check for token on app start
   useEffect(() => {
     const token = localStorage.getItem("diner28_token");
     if (token) {
-      // Optional: validate token with backend
       validateToken(token);
     } else {
       setLoading(false);
@@ -25,51 +23,61 @@ export function AuthProvider({ children }) {
 
   const validateToken = async (token) => {
     try {
-      // Simple protected endpoint to verify token + get user
-      const res = await api.get("/auth/me"); // we'll create this tiny endpoint later if needed
+      const res = await api.get("/api/auth/me");
       setUser(res.data.user);
+      notify("Welcome back!", "success");
     } catch (err) {
-      // Token invalid or expired
+      console.log("Token invalid or expired:", err.response?.data);
       localStorage.removeItem("diner28_token");
-      notify("Session expired. Please log in again.", "info");
+      notify("Session expired. Please login again.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const login = (email, _, userData) => {
-    setUser({
-      email,
-      name: userData?.name || email.split("@")[0],
-      role: userData?.role || "customer",
-      contact: userData?.contact,
-      profilePic: userData?.profilePic,
-      _id: userData?._id,
-    });
+  const login = async (email, password) => {
+    try {
+      const res = await api.post("/api/auth/login", { email, password });
+      const { token, user: userData } = res.data;
+
+      localStorage.setItem("diner28_token", token);
+      setUser(userData);
+      notify(`Welcome back, ${userData.name}!`, "success");
+      return true;
+    } catch (err) {
+      const msg = err.response?.data?.message || "Login failed";
+      notify(msg, "error");
+      return false;
+    }
+  };
+
+  const register = async (formData) => {
+    try {
+      const res = await api.post("/api/auth/register", formData);
+      notify("Account created! Please login.", "success");
+      return true;
+    } catch (err) {
+      notify(err.response?.data?.message || "Registration failed", "error");
+      return false;
+    }
   };
 
   const logout = () => {
     localStorage.removeItem("diner28_token");
     setUser(null);
-    localStorage.removeItem("token");
     notify("Logged out successfully", "success");
   };
 
-  const updateProfile = (updates) => {
-    setUser((prev) => ({ ...prev, ...updates }));
-  };
-
-  const value = {
-    user,
-    login,
-    logout,
-    updateProfile,
-    loading,
-    isAuthenticated: !!user,
-  };
-
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      loading,
+      isAuthenticated: !!user,
+      isAdmin: user?.role === "admin"
+    }}>
       {!loading && children}
     </AuthContext.Provider>
   );

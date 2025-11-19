@@ -7,14 +7,14 @@ export default function CancelReservationButton({ reservationId }) {
   const notify = useNotification();
 
   const handleCancel = async () => {
-    if (!window.confirm("Are you sure you want to cancel this reservation?")) return;
+    if (!window.confirm("Are you sure you want to cancel this reservation?\nThis action cannot be undone.")) return;
 
     try {
       await cancelReservation(reservationId);
       notify("Reservation cancelled successfully", "success");
-      refetch();
+      refetch?.();
     } catch (err) {
-      notify("Failed to cancel", "error");
+      notify("Failed to cancel reservation", "error");
     }
   };
 

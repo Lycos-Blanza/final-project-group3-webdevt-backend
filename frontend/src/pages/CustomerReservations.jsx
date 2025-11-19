@@ -1,7 +1,7 @@
 // src/pages/CustomerReservations.jsx
 import React from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { useReservation } from "../contexts/ReservationContext"; // ← THIS IS THE KEY FIX
+import { useReservation } from "../contexts/ReservationContext";
 import { useTables } from "../contexts/TablesContext";
 import { useNavigate } from "react-router-dom";
 import CancelReservationButton from "../components/CancelReservationButton";
@@ -9,11 +9,16 @@ import UpdateReservationButton from "../components/UpdateReservationButton";
 
 export default function CustomerReservations() {
   const { user } = useAuth();
-  const { reservations = [], loading } = useReservation(); // ← Safe + default empty array
+  const { reservations = [], loading: loadingMy, refetch } = useReservation();
   const { tables } = useTables();
   const navigate = useNavigate();
 
-  if (loading) {
+  // Refetch on mount just in case
+  React.useEffect(() => {
+    if (user) refetch();
+  }, [user]);
+
+  if (loadingMy) {
     return (
       <div className="pt-[56px] min-h-screen bg-[#f6f0e7] flex items-center justify-center">
         <p className="text-2xl text-[#5C3A2E] font-bold">Loading reservations...</p>
@@ -21,7 +26,10 @@ export default function CustomerReservations() {
     );
   }
 
-  const pendingReservations = reservations.filter(r => r.status === "Pending");
+  // SHOW ALL UPCOMING RESERVATIONS (Pending or Confirmed)
+  const activeReservations = reservations.filter(r =>
+    r.status !== "Cancelled" && r.status !== "Completed"
+  );
 
   return (
     <div className="pt-[56px] mx-auto max-w-[1200px] px-4 bg-[#f6f0e7] min-h-screen">
@@ -32,7 +40,6 @@ export default function CustomerReservations() {
             My Reservations
           </h2>
 
-          {/* NO USER */}
           {!user ? (
             <div className="text-center py-16 bg-gray-50 rounded-xl">
               <p className="text-xl text-gray-700 mb-6">Please log in to view your reservations</p>
@@ -43,9 +50,9 @@ export default function CustomerReservations() {
                 Log In Now
               </button>
             </div>
-          ) : pendingReservations.length === 0 ? (
+          ) : activeReservations.length === 0 ? (
             <div className="text-center py-20">
-              <p className="text-2xl text-gray-600 mb-8">No pending reservations</p>
+              <p className="text-2xl text-gray-600 mb-8">No upcoming reservations</p>
               <button
                 onClick={() => navigate("/reservation")}
                 className="px-10 py-5 bg-[#5C3A2E] text-white text-xl rounded-xl font-bold hover:bg-[#4a2e24] transition shadow-lg"
@@ -55,16 +62,14 @@ export default function CustomerReservations() {
             </div>
           ) : (
             <div className="space-y-8">
-              {pendingReservations.map((res) => {
+              {activeReservations.map((res) => {
                 const table = tables.find(t =>
-                  t._id === res.tableNumber ||
-                  t.number === res.tableNumber ||
-                  t.id === res.tableNumber
+                  t.number === res.tableNumber || t.id === res.tableNumber
                 );
 
                 return (
                   <div
-                    key={res._id || res.id}
+                    key={res._id}
                     className="p-8 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border-2 border-amber-200 shadow-md"
                   >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-lg">
@@ -80,7 +85,7 @@ export default function CustomerReservations() {
                       <div><strong className="text-[#5C3A2E]">Guests:</strong> {res.guests}</div>
                       <div>
                         <strong className="text-[#5C3A2E]">Table:</strong>{" "}
-                        {table?.number || "N/A"}{table && ` (up to ${table.capacity} seats)`}
+                        {table?.number || res.tableNumber} {table && `(up to ${table.capacity} seats)`}
                       </div>
                     </div>
 
@@ -91,10 +96,14 @@ export default function CustomerReservations() {
                     )}
 
                     <div className="mt-8 flex flex-wrap items-center gap-4">
-                      <span className="px-6 py-3 bg-yellow-100 text-yellow-800 rounded-full font-bold text-sm">
-                        Pending Approval
+                      <span className={`px-6 py-3 rounded-full font-bold text-sm ${
+                        res.status === "Confirmed"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }`}>
+                        {res.status === "Confirmed" ? "Confirmed" : "Pending Approval"}
                       </span>
-                      <CancelReservationButton reservationId={res._id || res.id} />
+                      <CancelReservationButton reservationId={res._id} />
                       <UpdateReservationButton reservation={res} />
                     </div>
                   </div>
