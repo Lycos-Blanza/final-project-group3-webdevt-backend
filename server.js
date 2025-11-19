@@ -17,7 +17,10 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"], // Add your frontend URLs
+    origin: [
+      "http://localhost:5173",
+      "https://final-project-group3-webdevt-git-4f9c07-lycos-projects-df81940b.vercel.app",
+    ], // Add your frontend URLs
     credentials: true,
   })
 );
