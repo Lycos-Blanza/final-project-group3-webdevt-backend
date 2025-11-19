@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "builds": [
     {
       "src": "api/server.js",
@@ -11,14 +10,5 @@
       "src": "/(.*)",
       "dest": "api/server.js"
     }
-  ],
-  "functions": {
-    "api/server.js": {
-      "maxDuration": 30,
-      "memory": 1024
-    }
-  },
-  "env": {
-    "NODE_ENV": "production"
-  }
+  ]
 }
