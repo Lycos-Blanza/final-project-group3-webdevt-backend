@@ -1,3 +1,4 @@
+// backend/server.js
 require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
@@ -14,33 +15,39 @@ const tableRoutes = require("./routes/table.routes");
 
 const app = express();
 
-// Middleware
+// === MIDDLEWARE ===
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://final-project-group3-webdevt-git-4f9c07-lycos-projects-df81940b.vercel.app",
-    ], // Add your frontend URLs
+    origin: true, // Allow all origins in production (Vercel frontend will work)
     credentials: true,
   })
 );
 app.use(morgan("dev"));
 app.use(express.json());
 
-// In backend/server.js — add this right after app.use(express.json());
+// === ROOT & HEALTH CHECK ===
 app.get("/", (req, res) => {
   res.json({
-    message: "Diner28 API is live! 🚀",
+    message: "Diner28 API is live!",
     status: "ok",
     version: "1.0.0",
+    timestamp: new Date().toISOString(),
   });
 });
 
-// Database connection
-const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/diner28";
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// === DATABASE CONNECTION ===
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error("MONGO_URI is missing in environment variables!");
+  process.exit(1);
+}
 connectDB(MONGO_URI);
 
-// Routes
+// === ROUTES ===
 app.use("/api/auth", authRoutes);
 app.use("/api/reservations", reservationRoutes);
 app.use("/api/contacts", contactRoutes);
@@ -48,43 +55,14 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/tables", tableRoutes);
 
-// Health check
-app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
-});
-
-// === GRACEFUL START & SHUTDOWN ===
-const port = process.env.PORT || 5000;
-
-const server = app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-  console.log(`Health check: http://localhost:${port}/api/health`);
-});
-
-// Graceful shutdown (Ctrl+C, nodemon restart, deployment, etc.)
-process.on("SIGINT", shutDown);
-process.on("SIGTERM", shutDown);
-
-function shutDown() {
-  console.log("\nReceived shutdown signal. Closing server gracefully...");
-  server.close(() => {
-    console.log("Server closed. All connections terminated.");
-    process.exit(0);
+// === ONLY START SERVER IN LOCAL DEV (NOT ON VERCEL) ===
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`Health check: http://localhost:${PORT}/api/health`);
   });
-
-  // Force close after 10 seconds if clients won't disconnect
-  setTimeout(() => {
-    console.error("Forcing shutdown — some connections still open!");
-    process.exit(1);
-  }, 10000);
 }
 
-// Optional: Auto-retry if port is in use (super robust)
-server.on("error", (err) => {
-  if (err.code === "EADDRINUSE") {
-    console.log(`Port ${port} is busy — trying port ${port + 1}...`);
-    app.listen(port + 1);
-  } else {
-    console.error("Server error:", err);
-  }
-});
+// === EXPORT FOR VERCEL SERVERLESS ===
+module.exports = app; // This is the magic line Vercel needs
