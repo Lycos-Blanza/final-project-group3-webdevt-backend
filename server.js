@@ -3,7 +3,6 @@ require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
-
 const connectDB = require("./db");
 
 const authRoutes = require("./routes/auth.routes");
@@ -16,36 +15,41 @@ const tableRoutes = require("./routes/table.routes");
 const app = express();
 
 // === MIDDLEWARE ===
-app.use(
-  cors({
-    origin: true, // Allow all origins in production (Vercel frontend will work)
-    credentials: true,
-  })
-);
+app.use(cors({ origin: true, credentials: true }));
 app.use(morgan("dev"));
 app.use(express.json());
 
-// === ROOT & HEALTH CHECK ===
+// === ROOT & HEALTH ===
 app.get("/", (req, res) => {
-  res.json({
-    message: "Diner28 API is live!",
-    status: "ok",
-    version: "1.0.0",
-    timestamp: new Date().toISOString(),
-  });
+  res.json({ message: "Diner28 API is LIVE!", status: "ok" });
 });
 
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// === DATABASE CONNECTION ===
-const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-  console.error("MONGO_URI is missing in environment variables!");
-  process.exit(1);
-}
-connectDB(MONGO_URI);
+// === LAZY MONGO CONNECTION (ONLY WHEN NEEDED) ===
+let isConnected = false;
+const connectWithRetry = async () => {
+  if (isConnected) return;
+  const uri = process.env.MONGO_URI;
+  if (!uri) {
+    console.error("MONGO_URI missing!");
+    return;
+  }
+  try {
+    await connectDB(uri);
+    isConnected = true;
+  } catch (err) {
+    console.error("Failed to connect to MongoDB:", err.message);
+  }
+};
+
+// Run connection on EVERY request (safe for serverless)
+app.use(async (req, res, next) => {
+  await connectWithRetry();
+  next();
+});
 
 // === ROUTES ===
 app.use("/api/auth", authRoutes);
@@ -55,14 +59,13 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/tables", tableRoutes);
 
-// === ONLY START SERVER IN LOCAL DEV (NOT ON VERCEL) ===
+// === LOCAL DEV ONLY ===
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-    console.log(`Health check: http://localhost:${PORT}/api/health`);
+    console.log(`Local server running on http://localhost:${PORT}`);
   });
 }
 
-// === EXPORT FOR VERCEL SERVERLESS ===
-module.exports = app; // This is the magic line Vercel needs
+// === EXPORT FOR VERCEL ===
+module.exports = app;
