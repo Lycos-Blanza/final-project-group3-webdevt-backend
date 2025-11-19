@@ -1,4 +1,4 @@
-// api/server.js ← FINAL VERSION – WORKS 100% WITH YOUR URI + CORS FIXED
+// api/server.js ← FINAL VERSION – CORS FIXED FOR VERCEL + CREDENTIALS (2025)
 
 require("dotenv").config();
 const express = require("express");
@@ -8,8 +8,21 @@ const mongoose = require("mongoose");
 
 const app = express();
 
-// ONLY CHANGE: allow your Vercel frontend (and everything else)
-app.use(cors());   // ← THIS LINE REPLACED — allows all origins (perfect for project)
+// FIXED CORS: Allows your exact Vercel frontend + localhost, with credentials
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",                                          // Local development
+      "http://localhost:5173",                                          // Vite default
+      "https://final-project-group3-webdevt-fronte-sigma.vercel.app",   // Your live Vercel URL
+      // Add any preview URLs here if needed, e.g.:
+      // "https://final-project-group3-webdevt-fronte-sigma-git-main-*.vercel.app"
+    ],
+    credentials: true,         // Required for cookies/JWT/auth
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 app.use(morgan("dev"));
 app.use(express.json());
@@ -23,16 +36,15 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI, {
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      bufferCommands: false,     // this stops buffering timeout
+      bufferCommands: false,
     });
     console.log("MongoDB connected successfully!");
   } catch (err) {
     console.error("MongoDB connection failed:", err.message);
-    setTimeout(connectDB, 3000); // retry every 3s
+    setTimeout(connectDB, 3000);
   }
 };
 
-// Connect on startup
 connectDB();
 
 // Routes
