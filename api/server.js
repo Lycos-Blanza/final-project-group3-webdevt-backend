@@ -60,5 +60,18 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/tables", tableRoutes);
 
+const PORT = process.env.PORT || 3000;
+
+const server = app.listen(PORT, () => {
+  console.log(`Diner28 API running on port ${PORT}`);
+});
+
+// Graceful shutdown (important for Railway)
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully");
+  server.close(() => {
+    console.log("Process terminated");
+  });
+});
 // Export for Vercel & Railway
 module.exports = app;
